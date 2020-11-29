@@ -105,7 +105,7 @@ ProjectRoute.put(
     // Try Validate
     await ProjectModel.updateOne(
       { name: req.params.name },
-      req.body,
+      { $set: req.body },
       (err, raw) => {
         if (err) {
           next(err);

@@ -84,13 +84,17 @@ SkillRoute.put('/api/skills/:key', express.json(), async (req, res, next) => {
     return;
   }
   // Try Validate
-  await SkillModel.updateOne({ key: req.params.key }, req.body, (err, raw) => {
-    if (err) {
-      next(err);
-      return;
+  await SkillModel.updateOne(
+    { key: req.params.key },
+    { $set: req.body },
+    (err, raw) => {
+      if (err) {
+        next(err);
+        return;
+      }
+      res.json(raw);
     }
-    res.json(raw);
-  });
+  );
 });
 
 /* Delete */
