@@ -20,15 +20,20 @@ const SkillSchema = new mongoose.Schema({
     required: true,
     trim: true
   },
-  imgurl: {
-    type: String,
-    trim: true
+  imgUrl: {
+    type: Buffer,
+    required: true,
   },
   type: {
     type: String,
     required: true,
     trim: true
   },
+  order:{
+    type: String,
+    required: true,
+    trim: true
+  }
 });
 
 const SkillModel = mongoose.model('Skill', SkillSchema);

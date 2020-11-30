@@ -7,10 +7,21 @@ ExperienceRoute.get('/api/experiences', async (req, res, next) => {
   const { page, size } = req.query;
   const data = await ExperienceModel.find({});
   const dataLength = data.length;
+  // 分頁
   let pageData = [];
-  page && size
-    ? (pageData = data.splice(size * (page - 1), size))
-    : (pageData = data);
+  page && size ? (pageData = data.splice(size * (page - 1), size)) : (pageData = data);
+  // 排序 order
+  pageData.sort((a, b) => {
+    const oderA = a.order;
+    const oderB = b.order;
+    if (oderA < oderB) {
+      return -1;
+    }
+    if (oderA > oderB) {
+      return 1;
+    }
+    return 0;
+  });
   try {
     res.set('totalSize', dataLength);
     res.json(pageData);
@@ -39,81 +50,62 @@ ExperienceRoute.get('/api/experiences/:company', async (req, res, next) => {
 });
 
 /* Post */
-ExperienceRoute.post(
-  '/api/experiences',
-  express.json(),
-  async (req, res, next) => {
-    // 搜尋是否重複
-    const { company, position, date, imgUrl, task } = req.body;
-    const goal = await ExperienceModel.findOne({ company: company });
-    if (goal) {
-      const error = {
-        statusCode: 400,
-        message: '此名字已存在',
-      };
-      next(error);
-      return;
-    }
-
-    // Try Validate
-    const exprience = new ExperienceModel({
-      company,
-      position,
-      date,
-      imgUrl,
-      task,
-    });
-    try {
-      await exprience.save();
-      res.json(req.body);
-    } catch (err) {
-      next(err);
-    }
+ExperienceRoute.post('/api/experiences', express.json(), async (req, res, next) => {
+  // 搜尋是否重複
+  const { company, position, date, imgUrl, task, order } = req.body;
+  const goal = await ExperienceModel.findOne({ company: company });
+  if (goal) {
+    const error = {
+      statusCode: 400,
+      message: '此名字已存在',
+    };
+    next(error);
+    return;
   }
+
+  // Try Validate
+  const exprience = new ExperienceModel({ company, position, date, imgUrl, task, order });
+  try {
+    await exprience.save();
+    res.json(req.body);
+  } catch (err) {
+    next(err);
+  }
+}
 );
 
 /* Put */
-ExperienceRoute.put(
-  '/api/experiences/:company',
-  express.json(),
-  async (req, res, next) => {
-    // 搜尋是否存在
-    const goal = await ExperienceModel.findOne({
-      company: req.params.company,
-    }).exec();
-    if (!goal) {
-      const error = {
-        statusCode: 400,
-        message: '查無資料',
-      };
-      next(error);
-      return;
-    }
-    // 搜尋是否重複
-    const updateGoal = await ExperienceModel.findOne({
-      company: req.body.company,
-    });
-    if (updateGoal && req.body.company !== req.params.company) {
-      const error = {
-        statusCode: 400,
-        message: '此名字已存在',
-      };
-      next(error);
-      return;
-    }
-    // Try Validate
-    await ExperienceModel.updateOne(
-      { company: req.params.company },
-      { $set: req.body },
-      (err, raw) => {
-        if (err) {
-          next(err);
-          return;
-        }
-        res.json(raw);
-      }
-    );
+ExperienceRoute.put('/api/experiences/:company', express.json(), async (req, res, next) => {
+  // 搜尋是否存在
+  const goal = await ExperienceModel.findOne({ company: req.params.company, }).exec();
+  if (!goal) {
+    const error = {
+      statusCode: 400,
+      message: '查無資料',
+    };
+    next(error);
+    return;
   }
+  // 搜尋是否重複
+  const updateGoal = await ExperienceModel.findOne({ company: req.body.company, });
+  if (updateGoal && req.body.company !== req.params.company) {
+    const error = {
+      statusCode: 400,
+      message: '此名字已存在',
+    };
+    next(error);
+    return;
+  }
+  // Try Validate
+  await ExperienceModel.updateOne({ company: req.params.company }, { $set: req.body }, (err, raw) => {
+    if (err) {
+      next(err);
+      return;
+    }
+    res.json(raw);
+  }
+  );
+}
 );
 
 /* Delete */

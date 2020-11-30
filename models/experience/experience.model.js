@@ -28,6 +28,11 @@ const ExperienceSchema = new mongoose.Schema({
     type: [String],
     required: true,
   },
+  order:{
+    type: String,
+    required: true,
+    trim: true
+  }
 });
 
 const ExperienceModel = mongoose.model('Experience', ExperienceSchema);

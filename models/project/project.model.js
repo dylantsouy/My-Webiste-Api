@@ -22,6 +22,7 @@ const ProjectSchema = new mongoose.Schema({
   },
   imgUrl: {
     type: String,
+    required: true,
     trim: true
   },
   describe: {
@@ -36,6 +37,11 @@ const ProjectSchema = new mongoose.Schema({
   },
   backUrl:{
     type: String,
+    trim: true
+  },
+  order:{
+    type: String,
+    required: true,
     trim: true
   }
 });
