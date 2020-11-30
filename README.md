@@ -10,7 +10,7 @@ Skill - Connect Skills data from Mongodb
 Project - Connect Projects data from Mongodb  
 Experience - Connect Experiences data from Mongodb  
   
-## unning Locally  
+## Running Locally  
 Make sure you have Node.js installed.  
   
 $ npm install  
