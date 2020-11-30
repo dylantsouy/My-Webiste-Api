@@ -30,7 +30,7 @@ const SkillSchema = new mongoose.Schema({
     trim: true
   },
   order:{
-    type: String,
+    type: Number,
     required: true,
     trim: true
   }

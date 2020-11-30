@@ -68,14 +68,8 @@ SkillRoute.get('/api/skills/:key', async (req, res, next) => {
 
 /* Post */
 SkillRoute.post('/api/skills', express.json(), upload.single('imgUrl'), async (req, res, next) => {
-  // get binary
-  const buffer = await sharp(req.file.buffer)
-    .resize({ width: 160, height: 160 })
-    .png()
-    .toBuffer()
-  req.body.imgUrl = buffer
-  const { key, name, level, type, imgUrl, order } = req.body;
   // 搜尋是否重複
+  const { key } = req.body;
   const goal = await SkillModel.findOne({ key: key });
   if (goal) {
     const error = {
@@ -85,6 +79,13 @@ SkillRoute.post('/api/skills', express.json(), upload.single('imgUrl'), async (r
     next(error);
     return;
   }
+  // get binary
+  const buffer = await sharp(req.file.buffer)
+    .resize({ width: 160, height: 160 })
+    .png()
+    .toBuffer()
+  req.body.imgUrl = buffer
+  const { name, level, type, imgUrl, order } = req.body;
   // Try Validate
   const skill = new SkillModel({ key, name, level, type, imgUrl, order });
   try {
@@ -117,12 +118,14 @@ SkillRoute.put('/api/skills/:key', express.json(), upload.single('imgUrl'), asyn
     next(error);
     return;
   }
-  // get binary
-  const buffer = await sharp(req.file.buffer)
-    .resize({ width: 160, height: 160 })
-    .png()
-    .toBuffer()
-  req.body.imgUrl = buffer
+  if (req.file) {
+    // get binary
+    const buffer = await sharp(req.file.buffer)
+      .resize({ width: 160, height: 160 })
+      .png()
+      .toBuffer()
+    req.body.imgUrl = buffer
+  }
   // Try Validate
   await SkillModel.updateOne({ key: req.params.key }, { $set: req.body }, (err, raw) => {
     if (err) {

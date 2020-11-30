@@ -29,7 +29,7 @@ const ExperienceSchema = new mongoose.Schema({
     required: true,
   },
   order:{
-    type: String,
+    type: Number,
     required: true,
     trim: true
   }
