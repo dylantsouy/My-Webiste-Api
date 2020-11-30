@@ -1,4 +1,4 @@
-## My-Website API  
+## My-Website-Api  
 A barebones Node.js app using Express 4.  
   
 Database: Mongodb  
