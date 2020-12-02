@@ -5,111 +5,65 @@ const ExperienceRoute = express.Router();
 /* Get 全部 */
 ExperienceRoute.get('/api/experiences', async (req, res, next) => {
   const { page, size } = req.query;
-  const data = await ExperienceModel.find({});
-  const dataLength = data.length;
-  // 分頁
-  let pageData = [];
-  page && size ? (pageData = data.splice(size * (page - 1), size)) : (pageData = data);
-  // 排序 order
-  pageData.sort((a, b) => {
-    const oderA = a.order;
-    const oderB = b.order;
-    if (oderA < oderB) {
-      return -1;
-    }
-    if (oderA > oderB) {
-      return 1;
-    }
-    return 0;
-  });
-  try {
-    res.set('totalSize', dataLength);
-    res.json(pageData);
-  } catch (err) {
-    next(err);
-  }
+  await ExperienceModel.find({})
+    .then(data => {
+      const dataLength = data.length;
+      // 分頁
+      let pageData = [];
+      page && size ? (pageData = data.splice(size * (page - 1), size)) : (pageData = data);
+      // 排序 order
+      pageData.sort((a, b) => {
+        const oderA = a.order;
+        const oderB = b.order;
+        if (oderA < oderB) return -1;
+        if (oderA > oderB) return 1;
+        return 0;
+      });
+      res.set('totalSize', dataLength);
+      res.json(pageData);
+    })
+    .catch(err => {
+      next(err)
+      return
+    })
 });
 
 /* Get 特定目標 */
 ExperienceRoute.get('/api/experiences/:company', async (req, res, next) => {
+  const error = {
+    statusCode: 400,
+    message: '查無資料',
+  };
   // 搜尋是否存在
-  const data = await ExperienceModel.findOne({ company: req.params.company });
-  if (!data) {
-    const error = {
-      statusCode: 400,
-      message: '查無資料',
-    };
-    next(error);
-    return;
-  }
-  try {
-    res.json(data);
-  } catch (err) {
-    next(err);
-  }
+  await ExperienceModel.findOne({ company: req.params.company })
+    .then(data => data === null ? res.json(error) : res.json(data))
+    .catch(e => {
+      next(error)
+      return
+    })
 });
 
 /* Post */
 ExperienceRoute.post('/api/experiences', express.json(), async (req, res, next) => {
-  // 搜尋是否重複
+  const error = {
+    statusCode: 400,
+    message: '此經歷已存在',
+  };
   const { company, position, date, imgUrl, task, order } = req.body;
-  const goal = await ExperienceModel.findOne({ company: company });
-  if (goal) {
-    const error = {
-      statusCode: 400,
-      message: '此名字已存在',
-    };
+  // 搜尋是否重複
+  const goal = await ExperienceModel.findOne({ company: company })
+  if (!goal) {
+    await new ExperienceModel({ company, position, date, imgUrl, task, order }).save()
+      .then(data => res.json(req.body))
+      .catch(err => next(err))
+  } else {
     next(error);
     return;
   }
-
-  // Try Validate
-  const exprience = new ExperienceModel({ company, position, date, imgUrl, task, order });
-  try {
-    await exprience.save();
-    res.json(req.body);
-  } catch (err) {
-    next(err);
-  }
-}
-);
+});
 
 /* Put */
 ExperienceRoute.put('/api/experiences/:company', express.json(), async (req, res, next) => {
-  // 搜尋是否存在
-  const goal = await ExperienceModel.findOne({ company: req.params.company, }).exec();
-  if (!goal) {
-    const error = {
-      statusCode: 400,
-      message: '查無資料',
-    };
-    next(error);
-    return;
-  }
-  // 搜尋是否重複
-  const updateGoal = await ExperienceModel.findOne({ company: req.body.company, });
-  if (updateGoal && req.body.company !== req.params.company) {
-    const error = {
-      statusCode: 400,
-      message: '此名字已存在',
-    };
-    next(error);
-    return;
-  }
-  // Try Validate
-  await ExperienceModel.updateOne({ company: req.params.company }, { $set: req.body }, (err, raw) => {
-    if (err) {
-      next(err);
-      return;
-    }
-    res.json(raw);
-  }
-  );
-}
-);
-
-/* Delete */
-ExperienceRoute.delete('/api/experiences/:company', async (req, res, next) => {
   // 搜尋是否存在
   const goal = await ExperienceModel.findOne({ company: req.params.company });
   if (!goal) {
@@ -120,16 +74,48 @@ ExperienceRoute.delete('/api/experiences/:company', async (req, res, next) => {
     next(error);
     return;
   }
-  await ExperienceModel.deleteOne({ company: req.params.company });
-  try {
-    const message = {
-      message: '刪除成功',
-      company: req.params.company,
+  // 搜尋是否重複
+  const updateGoal = await ExperienceModel.findOne({ company: req.body.company });
+  if (updateGoal && req.body.company !== req.params.company) {
+    const error = {
+      statusCode: 400,
+      message: '經歷重複',
     };
-    res.json(message);
-  } catch (err) {
-    next(err);
+    next(error);
+    return;
   }
+  req.body.updated = Date.now();
+  // Try Validate
+  await ExperienceModel.updateOne({ company: req.params.company }, { $set: req.body })
+    .then(() => res.json(req.body))
+    .catch(err => next(err))
+});
+
+/* Delete */
+ExperienceRoute.delete('/api/experiences/:company', async (req, res, next) => {
+  const message = {
+    message: '刪除成功',
+    company: req.params.company,
+  };
+  const error = {
+    statusCode: 400,
+    message: '查無資料',
+  };
+
+  // 搜尋是否存在
+  await ExperienceModel.findOne({ company: req.params.company })
+    .then(async (data) => {
+      await ExperienceModel.deleteOne({ company: req.params.company })
+        .then(data => data.deletedCount === 0 ? next(error) : res.json(message))
+        .catch(err => {
+          next(err)
+          return
+        })
+    })
+    .catch(e => {
+      next(error)
+      return
+    });
 });
 
 module.exports = ExperienceRoute;
