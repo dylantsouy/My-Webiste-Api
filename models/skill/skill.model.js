@@ -6,10 +6,6 @@ const SkillSchema = new mongoose.Schema({
     required: true,
     trim: true
   },
-  updated: {
-    type: Date,
-    default: Date.now,
-  },
   name: {
     type: String,
     required: true,
@@ -33,6 +29,10 @@ const SkillSchema = new mongoose.Schema({
     type: Number,
     required: true,
     trim: true
+  },
+  updated: {
+    type: Date,
+    default: Date.now,
   }
 });
 
